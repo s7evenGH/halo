@@ -125,6 +125,9 @@ dependencies {
     runtimeOnly "com.h2database:h2:$h2Version"
     runtimeOnly "mysql:mysql-connector-java"
 
+    //implementation  当前项目依赖，当其他项目引入本项目依赖时，不会引入
+    //runtimeOnly 运行时才依赖
+    //compile 当前项目依赖，并且可以传递依赖，当其他项目引入本项目依赖时，会引入
     compileOnly "org.projectlombok:lombok"
     annotationProcessor "org.projectlombok:lombok"
 
@@ -140,6 +143,43 @@ dependencies {
     developmentOnly "org.springframework.boot:spring-boot-devtools"
 }
 
+//##开始##    增量发布代码
+// 清除现有的lib目录
+task myClearJar(type: Delete) {
+    delete "$buildDir\\libs\\lib"
+}
+
+// 将依赖包复制到lib目录
+task myCopyJar(type: Copy, dependsOn: 'myClearJar') {
+    from configurations.compileClasspath
+//    from configurations.runtime
+    into "$buildDir\\libs\\lib"
+}
+
+
+bootJar {
+    //mainClassName = 'co.weiku.WeikuApplication'
+
+    // jar包名称，默认是settings.gradle下的工程名 rootProject.name = 'alog-server'
+    baseName = 'halo'
+    version = '1.4.2'
+
+    classifier = 'boot'
+    excludes = ["*.jar"]
+
+    // lib目录的清除和复制任务
+    dependsOn myClearJar
+    dependsOn myCopyJar
+
+    // 指定依赖包的路径，运行时不再需要指定 java.ext.dir 或 loader.path 参数。
+    manifest {
+        attributes "Manifest-Version": 1.0,
+                'Class-Path': configurations.compileClasspath.files.collect { "lib/$it.name" }.join(' ')
+    }
+}
+//##结束##    增量发布代码
+
+
 test {
-    useJUnitPlatform()
+//    useJUnitPlatform()
 }
